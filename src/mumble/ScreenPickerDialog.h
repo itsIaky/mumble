@@ -13,8 +13,14 @@
 #	include <QtCore/QList>
 #	include <QtWidgets/QDialog>
 
+class QTabWidget;
 class QListWidget;
 class QListWidgetItem;
+class QWidget;
+class QLineEdit;
+class QLabel;
+class QPushButton;
+class QTimer;
 
 /// Modal dialog that lists available screens and windows for screen sharing.
 /// Call exec(); if accepted, use selectedSource() to retrieve the chosen source.
@@ -24,17 +30,45 @@ class ScreenPickerDialog : public QDialog {
 
 public:
 	explicit ScreenPickerDialog(QWidget *parent = nullptr);
+	~ScreenPickerDialog() override;
 
 	/// Returns the source selected by the user, or a default-constructed CaptureSource
 	/// (EntireScreen, screenIndex 0) if nothing was explicitly selected.
 	CaptureSource selectedSource() const;
 
+protected:
+	void keyPressEvent(QKeyEvent *event) override;
+	void closeEvent(QCloseEvent *event) override;
+
 private slots:
 	void onItemDoubleClicked(QListWidgetItem *item);
+	void onFilterChanged(const QString &text);
+	void onSelectionChanged();
+	void refreshSources();
+	void updateThumbnails();
 
 private:
-	QListWidget *m_list;
+	void setupUi();
+	void populateList(int tabIndex);
+	void updateStatusLabel();
+	bool hasValidSelection() const;
+	void restoreSelection(const CaptureSource &prevSource, QListWidget *list, const QList<CaptureSource> &sources);
+
+	QTabWidget *m_tabWidget;
+	QWidget *m_screensWidget;
+	QWidget *m_windowsWidget;
+	QListWidget *m_screensList;
+	QListWidget *m_windowsList;
+	QLineEdit *m_windowFilter;
+	QLabel *m_statusLabel;
+	QPushButton *m_refreshButton;
+	QPushButton *m_shareButton;
+
 	QList< CaptureSource > m_sources;
+	QList< CaptureSource > m_screenSources;
+	QList< CaptureSource > m_windowSources;
+
+	QTimer *m_refreshTimer;
 };
 
 #endif // USE_SCREEN_SHARING

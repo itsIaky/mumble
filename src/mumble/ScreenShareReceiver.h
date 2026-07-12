@@ -8,6 +8,7 @@
 
 #include "MumbleProtocol.h"
 #include "MumbleUDP.pb.h"
+#include "VideoCodec.h"
 
 #include <QtCore/QObject>
 #include <QtGui/QImage>
@@ -54,7 +55,7 @@ private:
 		bool isKeyFrame               = false;
 		quint32 width                 = 0;
 		quint32 height                = 0;
-		MumbleUDP::Video::Codec codec = MumbleUDP::Video::H264;
+		VideoCodec codec              = VideoCodec::H264;
 	};
 
 	/// sender_session -> frame_number -> pending fragment data
@@ -67,16 +68,16 @@ private:
 		SwsContext *swsCtx            = nullptr;
 		int swsWidth                  = 0;
 		int swsHeight                 = 0;
-		MumbleUDP::Video::Codec codec = MumbleUDP::Video::H264;
+		VideoCodec codec              = VideoCodec::H264;
 		/// Drop P-frames until the decoder has seen at least one IDR keyframe.
 		bool gotKeyFrame = false;
 	};
 	std::map< quint32, DecoderState > m_decoders;
 
-	bool ensureDecoder(quint32 session, MumbleUDP::Video::Codec codec);
+	bool ensureDecoder(quint32 session, VideoCodec codec);
 	void destroyDecoder(quint32 session);
 	void decodeCompleteFrame(quint32 session, const QByteArray &encodedData, quint32 width, quint32 height,
-							 bool isKeyFrame, MumbleUDP::Video::Codec codec);
+							 bool isKeyFrame, VideoCodec codec);
 #endif
 };
 

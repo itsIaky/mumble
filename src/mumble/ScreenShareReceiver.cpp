@@ -5,18 +5,40 @@
 
 #include "ScreenShareReceiver.h"
 
+#include "Global.h"
+#include "Log.h"
 #include "MumbleProtocol.h"
 
 #ifdef USE_SCREEN_SHARING
 /// Maps the protocol's Codec enum to the corresponding FFmpeg codec ID.
 /// To add support for a new codec: add the proto enum value in MumbleUDP.proto,
 /// then add a case here returning the appropriate AV_CODEC_ID_*.
-static AVCodecID codecIdForProtoCodec(MumbleUDP::Video::Codec c) {
+static AVCodecID codecIdForProtoCodec(VideoCodec c) {
 	switch (c) {
-		case MumbleUDP::Video::H264:
+		case VideoCodec::H264:
 			return AV_CODEC_ID_H264;
+		case VideoCodec::HEVC:
+			return AV_CODEC_ID_HEVC;
+		case VideoCodec::VP8:
+			return AV_CODEC_ID_VP8;
+		case VideoCodec::VP9:
+			return AV_CODEC_ID_VP9;
+		case VideoCodec::AV1:
+			return AV_CODEC_ID_AV1;
 		default:
 			return AV_CODEC_ID_NONE;
+	}
+}
+
+/// Returns the codec name for logging.
+static const char *codecName(VideoCodec c) {
+	switch (c) {
+		case VideoCodec::H264: return "H.264";
+		case VideoCodec::HEVC: return "HEVC";
+		case VideoCodec::VP8:  return "VP8";
+		case VideoCodec::VP9:  return "VP9";
+		case VideoCodec::AV1:  return "AV1";
+		default: return "Unknown";
 	}
 }
 #endif
@@ -66,7 +88,7 @@ void ScreenShareReceiver::handleVideoPacket(const Mumble::Protocol::VideoData &v
 		pf.fragments.resize(fragCount);
 		pf.width  = videoData.width;
 		pf.height = videoData.height;
-		pf.codec  = videoData.codec;
+		pf.codec  = static_cast<VideoCodec>(videoData.codec);
 	}
 
 	// OR keyframe flag (UDP fragments may arrive out of order)
@@ -102,7 +124,7 @@ void ScreenShareReceiver::handleVideoPacket(const Mumble::Protocol::VideoData &v
 	const quint32 fw                    = pf.width;
 	const quint32 fh                    = pf.height;
 	const bool isKeyFrm                 = pf.isKeyFrame;
-	const MumbleUDP::Video::Codec codec = pf.codec;
+	const VideoCodec codec              = pf.codec;
 
 	// Cleanup old frames for this session
 	std::map< unsigned long long, PendingFrame > &senderMap = m_fragmentBuffer[session];
@@ -129,25 +151,62 @@ void ScreenShareReceiver::resetSender(quint32 senderSession) {
 }
 
 #ifdef USE_SCREEN_SHARING
-bool ScreenShareReceiver::ensureDecoder(quint32 session, MumbleUDP::Video::Codec protoCodec) {
+bool ScreenShareReceiver::ensureDecoder(quint32 session, VideoCodec codec) {
 	if (m_decoders.count(session) && m_decoders[session].codecCtx)
 		return true;
 
-	const AVCodecID avCodecId = codecIdForProtoCodec(protoCodec);
+	const AVCodecID avCodecId = codecIdForProtoCodec(codec);
 	if (avCodecId == AV_CODEC_ID_NONE)
 		return false;
 
-	const AVCodec *codec = avcodec_find_decoder(avCodecId);
-	if (!codec)
+	// Try hardware decoder first for supported codecs
+	const AVCodec *codecPtr = nullptr;
+	if (codec == VideoCodec::H264 || codec == VideoCodec::HEVC) {
+		// Try hardware decoders
+#ifdef Q_OS_MAC
+		if (codec == VideoCodec::H264) {
+			codecPtr = avcodec_find_decoder_by_name("h264_videotoolbox");
+		} else if (codec == VideoCodec::HEVC) {
+			codecPtr = avcodec_find_decoder_by_name("hevc_videotoolbox");
+		}
+#elif defined(Q_OS_LINUX)
+		if (codec == VideoCodec::H264) {
+			codecPtr = avcodec_find_decoder_by_name("h264_vaapi");
+			if (!codecPtr) codecPtr = avcodec_find_decoder_by_name("h264_nvdec");
+			if (!codecPtr) codecPtr = avcodec_find_decoder_by_name("h264_qsv");
+		} else if (codec == VideoCodec::HEVC) {
+			codecPtr = avcodec_find_decoder_by_name("hevc_vaapi");
+			if (!codecPtr) codecPtr = avcodec_find_decoder_by_name("hevc_nvdec");
+			if (!codecPtr) codecPtr = avcodec_find_decoder_by_name("hevc_qsv");
+		}
+#elif defined(Q_OS_WIN)
+		if (codec == VideoCodec::H264) {
+			codecPtr = avcodec_find_decoder_by_name("h264_d3d11va");
+		} else if (codec == VideoCodec::HEVC) {
+			codecPtr = avcodec_find_decoder_by_name("hevc_d3d11va");
+		}
+#endif
+	}
+
+	// Fall back to software decoder
+	if (!codecPtr) {
+		codecPtr = avcodec_find_decoder(avCodecId);
+	}
+
+	if (!codecPtr)
 		return false;
 
 	DecoderState ds;
-	ds.codec    = protoCodec;
-	ds.codecCtx = avcodec_alloc_context3(codec);
+	ds.codec    = codec;
+	ds.codecCtx = avcodec_alloc_context3(codecPtr);
 	if (!ds.codecCtx)
 		return false;
 
-	if (avcodec_open2(ds.codecCtx, codec, nullptr) < 0) {
+	// Enable low-latency decoding
+	ds.codecCtx->flags |= AV_CODEC_FLAG_LOW_DELAY;
+	ds.codecCtx->flags2 |= AV_CODEC_FLAG2_CHUNKS;
+
+	if (avcodec_open2(ds.codecCtx, codecPtr, nullptr) < 0) {
 		avcodec_free_context(&ds.codecCtx);
 		return false;
 	}
@@ -155,6 +214,9 @@ bool ScreenShareReceiver::ensureDecoder(quint32 session, MumbleUDP::Video::Codec
 	ds.frame            = av_frame_alloc();
 	ds.packet           = av_packet_alloc();
 	m_decoders[session] = ds;
+
+	Global::get().l->log(Log::Information, tr("Initialized %1 decoder for session %2 (%3)")
+						 .arg(codecName(codec)).arg(session).arg(codecPtr->name));
 	return true;
 }
 
@@ -180,7 +242,7 @@ void ScreenShareReceiver::destroyDecoder(quint32 session) {
 }
 
 void ScreenShareReceiver::decodeCompleteFrame(quint32 session, const QByteArray &encodedData, quint32 /*width*/,
-											  quint32 /*height*/, bool isKeyFrame, MumbleUDP::Video::Codec codec) {
+											  quint32 /*height*/, bool isKeyFrame, VideoCodec codec) {
 	if (!ensureDecoder(session, codec))
 		return;
 

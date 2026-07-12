@@ -68,6 +68,10 @@ message Video {
 	// Codec identifier. Currently only "H264" is defined.
 	enum Codec {
 		H264 = 0;
+		HEVC = 1;  // H.265/HEVC
+		VP8  = 2;  // VP8
+		VP9  = 3;  // VP9
+		AV1  = 4;  // AV1
 	}
 	Codec codec = 2;
 

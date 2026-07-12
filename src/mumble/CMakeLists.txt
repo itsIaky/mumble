@@ -82,6 +82,7 @@ find_pkg(Qt6
 		Sql
 		Svg
 		Widgets
+		OpenGLWidgets
 	REQUIRED
 )
 
@@ -578,6 +579,7 @@ target_link_libraries(mumble_client_object_lib
 		Qt6::Sql
 		Qt6::Svg
 		Qt6::Widgets
+		Qt6::OpenGLWidgets
 )
 
 if(static)

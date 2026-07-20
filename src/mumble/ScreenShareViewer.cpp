@@ -28,6 +28,9 @@
 #include <QtCore/QTimer>
 #include <QtCore/QDateTime>
 
+// OpenGL functions - use QOpenGLFunctions_3_3_Core for core profile
+#include <QtGui/QOpenGLFunctions_3_3_Core>
+
 // Custom QOpenGLWidget that forwards virtual functions to ScreenShareViewer
 class ScreenShareGLWidget : public QOpenGLWidget {
 public:
@@ -266,7 +269,7 @@ void ScreenShareViewer::paintGL() {
 	if (!m_pendingFrame.isNull()) {
 		m_texture->destroy();
 		m_texture->create();
-		QImage flipped = m_pendingFrame.flipped(Qt::Vertical);
+		QImage flipped = m_pendingFrame.mirrored(false, true);
 		m_texture->setData(flipped, QOpenGLTexture::GenerateMipMaps);
 		m_currentFrame = m_pendingFrame;
 		m_pendingFrame = QImage();

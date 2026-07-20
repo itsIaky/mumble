@@ -7,7 +7,7 @@
 #define MUMBLE_MUMBLE_SCREENSHAREVIEWER_H_
 
 #include <QtGui/QImage>
-#include <QtGui/QOpenGLFunctions>
+#include <QtGui/QOpenGLFunctions_3_3_Core>
 #include <QtWidgets/QDialog>
 
 // OpenGL types
@@ -26,7 +26,7 @@ class QTimer;
 
 /// Floating window that displays the screen share stream from a single remote user.
 /// Uses OpenGL for hardware-accelerated rendering when available.
-class ScreenShareViewer : public QDialog, protected QOpenGLFunctions {
+class ScreenShareViewer : public QDialog, protected QOpenGLFunctions_3_3_Core {
 private:
 	Q_OBJECT
 	Q_DISABLE_COPY(ScreenShareViewer)

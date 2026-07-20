@@ -360,7 +360,7 @@ bool ScreenCapture::tryInitHardwareEncoder(int width, int height) {
 
 	const AVCodec *codec = avcodec_find_encoder_by_name(encoderName);
 	if (!codec) {
-		Global::get().l->log(Log::Warning, tr("Hardware encoder '%1' not available").arg(encoderName));
+		Global::get().l->log(Log::Warning, tr("Hardware encoder '%1' not available").arg(QString::fromLatin1(encoderName)));
 		return false;
 	}
 
@@ -422,7 +422,7 @@ bool ScreenCapture::tryInitHardwareEncoder(int width, int height) {
 	m_encoderWidth  = width;
 	m_encoderHeight = height;
 
-	Global::get().l->log(Log::Information, tr("Initialized hardware encoder: %1").arg(encoderName));
+	Global::get().l->log(Log::Information, tr("Initialized hardware encoder: %1").arg(QString::fromLatin1(encoderName)));
 	return true;
 }
 
@@ -435,9 +435,9 @@ bool ScreenCapture::tryInitSoftwareEncoder(int width, int height) {
 
 	const AVCodec *codec = avcodec_find_encoder_by_name(encoderName);
 	if (!codec) {
-		Global::get().l->log(Log::Warning,
-							 tr("Encoder '%1' not available. Ensure it is installed and libavcodec was compiled with it.")
-							 .arg(encoderName));
+Global::get().l->log(Log::Warning,
+						 tr("Encoder '%1' not available. Ensure it is installed and libavcodec was compiled with it.")
+						 .arg(QString::fromLatin1(encoderName)));
 		return false;
 	}
 
@@ -485,7 +485,7 @@ bool ScreenCapture::tryInitSoftwareEncoder(int width, int height) {
 	m_encoderWidth  = width;
 	m_encoderHeight = height;
 
-	Global::get().l->log(Log::Information, tr("Initialized software encoder: %1").arg(encoderName));
+	Global::get().l->log(Log::Information, tr("Initialized software encoder: %1").arg(QString::fromLatin1(encoderName)));
 	return true;
 }
 

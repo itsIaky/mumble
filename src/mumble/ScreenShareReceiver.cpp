@@ -216,7 +216,7 @@ bool ScreenShareReceiver::ensureDecoder(quint32 session, VideoCodec codec) {
 	m_decoders[session] = ds;
 
 	Global::get().l->log(Log::Information, tr("Initialized %1 decoder for session %2 (%3)")
-						 .arg(codecName(codec)).arg(session).arg(codecPtr->name));
+						 .arg(QString::fromLatin1(codecName(codec))).arg(session).arg(QString::fromLatin1(codecPtr->name)));
 	return true;
 }
 

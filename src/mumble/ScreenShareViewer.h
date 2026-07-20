@@ -7,7 +7,7 @@
 #define MUMBLE_MUMBLE_SCREENSHAREVIEWER_H_
 
 #include <QtGui/QImage>
-#include <QtGui/QOpenGLFunctions_3_3_Core>
+#include <QtOpenGL/QOpenGLFunctions_3_3_Core>
 #include <QtWidgets/QDialog>
 
 // OpenGL types

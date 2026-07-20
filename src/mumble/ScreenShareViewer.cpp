@@ -269,7 +269,7 @@ void ScreenShareViewer::paintGL() {
 	if (!m_pendingFrame.isNull()) {
 		m_texture->destroy();
 		m_texture->create();
-		QImage flipped = m_pendingFrame.mirrored(false, true);
+		QImage flipped = m_pendingFrame.flipped(Qt::Vertical);
 		m_texture->setData(flipped, QOpenGLTexture::GenerateMipMaps);
 		m_currentFrame = m_pendingFrame;
 		m_pendingFrame = QImage();

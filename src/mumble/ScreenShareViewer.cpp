@@ -29,7 +29,7 @@
 #include <QtCore/QDateTime>
 
 // OpenGL functions - use QOpenGLFunctions_3_3_Core for core profile
-#include <QtGui/QOpenGLFunctions_3_3_Core>
+#include <QtOpenGL/QOpenGLFunctions_3_3_Core>
 
 // Custom QOpenGLWidget that forwards virtual functions to ScreenShareViewer
 class ScreenShareGLWidget : public QOpenGLWidget {

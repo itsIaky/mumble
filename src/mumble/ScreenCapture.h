@@ -11,9 +11,10 @@
 #include <QtCore/QTimer>
 #include <cstdint>
 
+#include "VideoCodec.h"
+
 #ifdef USE_SCREEN_SHARING
 #	include "CaptureSource.h"
-#	include "VideoCodec.h"
 extern "C" {
 #	include <libavcodec/avcodec.h>
 #	include <libavutil/opt.h>
@@ -70,6 +71,11 @@ public:
 	/// Updates capture configuration (applies on next startCapture() or resolution change).
 	void setConfig(const ScreenCaptureConfig &config);
 
+	/// Returns the current encoder width (0 if not initialized).
+	int encoderWidth() const;
+	/// Returns the current encoder height (0 if not initialized).
+	int encoderHeight() const;
+
 #ifdef USE_SCREEN_SHARING
 	/// Sets the capture source for the non-native picker path. Call before startCapture().
 	void setSource(const CaptureSource &source);
@@ -85,7 +91,7 @@ public:
 
 signals:
 	/// Emitted for every successfully encoded frame.
-	void frameEncoded(QByteArray encodedData, quint64 frameNumber, bool isKeyFrame);
+	void frameEncoded(QByteArray encodedData, quint64 frameNumber, bool isKeyFrame, VideoCodec codec);
 
 	/// Emitted when an encoding or capture error occurs that requires stopping.
 	void encodeError(QString errorMessage);

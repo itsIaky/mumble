@@ -4294,7 +4294,7 @@ void MainWindow::screenShare() {
 	}
 }
 
-void MainWindow::sendScreenShareFrame(QByteArray encodedData, quint64 frameNumber, bool isKeyFrame) {
+void MainWindow::sendScreenShareFrame(QByteArray encodedData, quint64 frameNumber, bool isKeyFrame, VideoCodec codec) {
 	ServerHandlerPtr sh = Global::get().sh;
 	ClientUser *p       = ClientUser::get(Global::get().uiSession);
 	if (!p || !sh || encodedData.isEmpty())
@@ -4306,9 +4306,20 @@ void MainWindow::sendScreenShareFrame(QByteArray encodedData, quint64 frameNumbe
 	const int dataSize                      = static_cast< int >(encodedData.size());
 	const int fragmentCount                 = (dataSize + MAX_FRAGMENT_BYTES - 1) / MAX_FRAGMENT_BYTES;
 
-	QScreen *screen  = QGuiApplication::primaryScreen();
-	const int width  = screen ? screen->size().width() : 0;
-	const int height = screen ? screen->size().height() : 0;
+	// Use encoder dimensions if available, fallback to screen size
+	ScreenCapture *sc = Global::get().sc;
+	const int width  = sc ? sc->encoderWidth() : (QGuiApplication::primaryScreen() ? QGuiApplication::primaryScreen()->size().width() : 0);
+	const int height = sc ? sc->encoderHeight() : (QGuiApplication::primaryScreen() ? QGuiApplication::primaryScreen()->size().height() : 0);
+
+	// Map VideoCodec to MumbleUDP::Video_Codec
+	MumbleUDP::Video_Codec protoCodec = MumbleUDP::Video_Codec_H264;
+	switch (codec) {
+		case VideoCodec::H264:  protoCodec = MumbleUDP::Video_Codec_H264;  break;
+		case VideoCodec::HEVC:  protoCodec = MumbleUDP::Video_Codec_HEVC;  break;
+		case VideoCodec::VP8:   protoCodec = MumbleUDP::Video_Codec_VP8;   break;
+		case VideoCodec::VP9:   protoCodec = MumbleUDP::Video_Codec_VP9;   break;
+		case VideoCodec::AV1:   protoCodec = MumbleUDP::Video_Codec_AV1;   break;
+	}
 
 	for (int i = 0; i < fragmentCount; ++i) {
 		const int offset    = i * MAX_FRAGMENT_BYTES;
@@ -4316,7 +4327,7 @@ void MainWindow::sendScreenShareFrame(QByteArray encodedData, quint64 frameNumbe
 
 		MumbleUDP::Video videoMsg;
 		videoMsg.set_sender_session(p->uiSession);
-		videoMsg.set_codec(MumbleUDP::Video_Codec_H264);
+		videoMsg.set_codec(protoCodec);
 		videoMsg.set_width(static_cast< std::uint32_t >(width));
 		videoMsg.set_height(static_cast< std::uint32_t >(height));
 		videoMsg.set_frame_number(frameNumber);

@@ -141,6 +141,22 @@ ScreenCapture::~ScreenCapture() {
 	saveConfigToSettings();
 }
 
+int ScreenCapture::encoderWidth() const {
+#ifdef USE_SCREEN_SHARING
+	return m_encoderWidth;
+#else
+	return 0;
+#endif
+}
+
+int ScreenCapture::encoderHeight() const {
+#ifdef USE_SCREEN_SHARING
+	return m_encoderHeight;
+#else
+	return 0;
+#endif
+}
+
 void ScreenCapture::startCapture() {
 #ifndef USE_SCREEN_SHARING
 	Global::get().l->log(Log::Warning,
@@ -307,7 +323,7 @@ void ScreenCapture::encodeImage(const QImage &srcImage) {
 	while (avcodec_receive_packet(m_codecCtx, m_packet) == 0) {
 		QByteArray encodedData(reinterpret_cast< const char * >(m_packet->data), m_packet->size);
 		const bool isKey = (m_packet->flags & AV_PKT_FLAG_KEY) != 0;
-		emit frameEncoded(encodedData, m_frameNumber, isKey);
+		emit frameEncoded(encodedData, m_frameNumber, isKey, m_config.codec);
 		av_packet_unref(m_packet);
 	}
 

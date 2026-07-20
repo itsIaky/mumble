@@ -21,6 +21,7 @@
 #include "QtUtils.h"
 #include "Usage.h"
 #include "UserLocalNicknameDialog.h"
+#include "VideoCodec.h"
 
 #include <memory>
 #include <optional>
@@ -473,7 +474,7 @@ public:
 	void toggleSelfPrioritySpeaker();
 	void recording();
 	void screenShare();
-	void sendScreenShareFrame(QByteArray encodedData, quint64 frameNumber, bool isKeyFrame);
+	void sendScreenShareFrame(QByteArray encodedData, quint64 frameNumber, bool isKeyFrame, VideoCodec codec);
 	void onRemoteFrameDecoded(quint32 senderSession, QImage frame);
 	void onRemoteScreenShareStopped(quint32 senderSession);
 	void openSelfCommentDialog();

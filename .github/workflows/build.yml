@@ -22,7 +22,7 @@ env:
 jobs:
 
   fetch_build_number:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     outputs:
       build_number: ${{ steps.fetch.outputs.build_number }}
     steps:
